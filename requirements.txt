@@ -1,0 +1,9 @@
+flask==2.1.1
+flask-socketio==5.2.0
+python-socketio==5.7.0
+SpeechRecognition==3.8.1
+PyAudio==0.2.13
+PyAutoGUI==0.9.53
+opencv-python==4.5.5.64
+pyautogui==0.9.53
+numpy==1.24.3

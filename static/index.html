@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snake Game</title>
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+    <style>
+      /* Global styles */
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
+        background-color: #000;
+        color: #fff;
+      }
+
+      h1,
+      h2 {
+        text-align: center;
+        color: #99ff25;
+        font-family: Cambria, Cochin, Georgia, Times, "Times New Roman", serif;
+        font-size: 50px;
+        text-shadow: 0 0 20px rgba(10, 10, 10, 80),
+          0 0 50px rgba(10, 10, 10, 80), 0 0 40px rgba(10, 10, 10, 70);
+        border-radius: 5px;
+      }
+
+      section {
+        display: none;
+        height: 100vh;
+        width: 100vw;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      }
+      section.active {
+        display: flex;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 10px;
+        width: 100%;
+        font-size: 16px;
+        cursor: pointer;
+        border: 2px solid #441414;
+        border-radius: 10px;
+        background-color: #aa5f5f;
+        color: #fff;
+        transition: transform 0.2s ease, background-color 0.3s ease;
+      }
+      button:hover {
+        transform: scale(1.04);
+        transition: all ease 0.3s;
+        background-color: #1abc9c;
+      }
+      .background {
+        background-size: cover;
+        background-position: center;
+      }
+      .page1 {
+        background-image: url("/static/assets/snake2.jpg");
+        background-size: cover;
+        background-position: center;
+      }
+      .page2 {
+        background-image: url("/static/assets/snake1.jpg");
+        background-size: cover;
+        background-position: center;
+      }
+      .page3 {
+        background-image: url("/static/assets/snake3.jpg");
+        background-size: cover;
+        background-position: center;
+      }
+      .page4 {
+        background-color: #08570c;
+        color: white;
+      }
+
+      /* Game container styles */
+      .game-container {
+        width: 50%;
+        max-width: 400px;
+        aspect-ratio: 1;
+        border: 5px solid #00ff00;
+        border-radius: 10px;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 20px auto;
+        background-color: #000;
+        box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 40px #00ff00;
+      }
+
+      .snake-part {
+        width: 5%;
+        height: 5%;
+        border: 2px solid #006400;
+        background: #7fff00;
+        position: absolute;
+        border-radius: 5px;
+      }
+
+      .apple {
+        width: 5%;
+        height: 5%;
+        background-color: red;
+        position: absolute;
+        border-radius: 50%;
+      }
+
+      .score {
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+      }
+
+      @media (max-width: 600px) {
+        button {
+          font-size: 14px;
+          padding: 8px 16px;
+        }
+        .score {
+          font-size: 1.2rem;
+        }
+      }
+    </style>
+
+
+  </head>
+  <body>
+    <!-- First Page -->
+    <section class="page1 background active">
+      <h1
+        style="
+          max-width: 600px;
+          height: 150px;
+          opacity: 3;
+          transition: opacity 0.3s ease;
+        "
+      >
+        Triple Threat Snake Game
+      </h1>
+      <div style="max-width: 200px;">
+        <button id="startGame">Start Game</button>
+        <button id="chooseMode">Choose Mode</button>
+        <button id="resetGame">Reset Game</button>
+      </div>
+    </section>
+
+    <!-- Second Page -->
+    <section class="page2 background">
+      <h2>Select Speed</h2>
+      <div style="max-width: 200px;">
+      <button id="slow">Slow</button>
+      <button id="medium">Medium</button>
+      <button id="fast">Fast</button></div>
+      <img
+        src="R.png"
+        style="
+          width: 500px;
+          height: 200px;
+          opacity: 3;
+          transition: opacity 0.3s ease;
+        "
+      />
+    </section>
+
+    <!-- Third Page -->
+    <section class="page3 background">
+      <h2>Choose Control Mode</h2>
+      <button
+        id="hand"
+        style="
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+        "
+      >
+        <img
+          src="2345.png"
+          alt="With Hand"
+          style="
+            width: 50px;
+            height: 50px;
+            opacity: 3;
+            transition: opacity 0.3s ease;
+          "
+        />
+      </button>
+      <button
+        id="eyes"
+        style="
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+        "
+      >
+        <img
+          src="123.png"
+          alt="With Eyes"
+          style="
+            width: 50px;
+            height: 50px;
+            opacity: 3;
+            transition: opacity 0.3s ease;
+          "
+        />
+      </button>
+      <button
+        id="voice"
+        style="
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+        "
+      >
+        <img
+          src="abcd.png"
+          alt="With Voice"
+          style="
+            width: 50px;
+            height: 50px;
+            opacity: 3;
+            transition: opacity 0.3s ease;
+          "
+        />
+      </button>
+      <img
+        src="R.png"
+        style="
+          width: 500px;
+          height: 200px;
+          opacity: 1.8;
+          transition: opacity 0.3s ease;
+        "
+      />
+    </section>
+
+    <!-- Game Page -->
+    <section class="page4">
+      <div class="score">
+        Score: <span id="score">0</span> | Highest Score:
+        <span id="highestScore">0</span>
+      </div>
+      <div style="max-width: 200px;">
+      <button id="resumeGame">Pause - Resume</button></div>
+      <div class="game-container" id="gameContainer"></div>
+    </section>
+
+
+    <script>
+      // Preload beep sound
+      const beepSound = new Audio("beep1.mp3");
+      beepSound.load();
+
+      // Navigation between pages
+      const pages = document.querySelectorAll("section");
+      const showPage = (pageIndex) => {
+        pages.forEach((page, index) => {
+          page.classList.toggle("active", index === pageIndex);
+        });
+      };
+
+      // Page Navigation
+      document
+        .getElementById("startGame")
+        .addEventListener("click", () => showPage(1));
+      document
+        .getElementById("chooseMode")
+        .addEventListener("click", () => showPage(2));
+      document
+        .getElementById("resetGame")
+        .addEventListener("click", () => location.reload());
+
+      document
+        .getElementById("hand")
+        .addEventListener("click", () => showPage(1));
+      document
+        .getElementById("eyes")
+        .addEventListener("click", () =>
+          alert("Couldn't implement this mode yet.")
+        );
+      document
+        .getElementById("voice")
+        .addEventListener("click", () =>
+          alert("Couldn't implement this mode yet.")
+        );
+
+      // Game variables
+      let snake = [{ x: 5, y: 5 }];
+      let apple = { x: 8, y: 8 };
+      let direction = { x: 0, y: 0 };
+      let gameInterval;
+      let speed = 200;
+      let score = 0;
+      const highestScore = localStorage.getItem("highestScore") || 0;
+      document.getElementById("highestScore").textContent = highestScore;
+
+      const container = document.getElementById("gameContainer");
+
+      // Render the game
+      const renderGame = () => {
+        container.innerHTML = "";
+        snake.forEach((part) => {
+          const snakePart = document.createElement("div");
+          snakePart.style.left = part.x * 5 + "%";
+          snakePart.style.top = part.y * 5 + "%";
+          snakePart.classList.add("snake-part");
+          container.appendChild(snakePart);
+        });
+
+        const appleElement = document.createElement("div");
+        appleElement.style.left = apple.x * 5 + "%";
+        appleElement.style.top = apple.y * 5 + "%";
+        appleElement.classList.add("apple");
+        container.appendChild(appleElement);
+      };
+
+      // Move the snake
+      const moveSnake = () => {
+        let head = {
+          x: snake[0].x + direction.x,
+          y: snake[0].y + direction.y,
+        };
+
+        // Wrap around the edges instead of game over
+        if (head.x < 0) head.x = 19;
+        if (head.x >= 20) head.x = 0;
+        if (head.y < 0) head.y = 19;
+        if (head.y >= 20) head.y = 0;
+
+        // Game Over only on self-collision
+        // Check if the head collides with any part of the snake body
+        if (snake.some((part) => part.x === head.x && part.y === head.y)) {
+          beepSound
+            .play()
+            .catch((error) =>
+              console.error("Error playing beep sound:", error)
+            ); // Play the beep sound and catch any errors
+          clearInterval(gameInterval);
+          alert("Game Over! Snake collided with itself.");
+          if (score > highestScore) {
+            localStorage.setItem("highestScore", score);
+          }
+          location.reload();
+        }
+
+        snake.unshift(head);
+
+        // Eat apple
+        if (head.x === apple.x && head.y === apple.y) {
+          score++;
+          document.getElementById("score").textContent = score;
+          apple = {
+            x: Math.floor(Math.random() * 20),
+            y: Math.floor(Math.random() * 20),
+          };
+
+          // Update highest score
+          if (score > highestScore) {
+            document.getElementById("highestScore").textContent = score;
+          }
+        } else {
+          snake.pop();
+        }
+
+        renderGame();
+      };
+
+      // Change speed
+      document.getElementById("slow").addEventListener("click", () => {
+        speed = 300;
+        showPage(3);
+      });
+      document.getElementById("medium").addEventListener("click", () => {
+        speed = 200;
+        showPage(3);
+      });
+      document.getElementById("fast").addEventListener("click", () => {
+        speed = 100;
+        showPage(3);
+      });
+
+      // Start the game
+      const startGame = () => {
+        clearInterval(gameInterval);
+        direction = { x: 1, y: 0 };
+        gameInterval = setInterval(moveSnake, speed);
+      };
+      // Reset Game button logic
+      document.getElementById("resetGame").addEventListener("click", () => {
+        localStorage.removeItem("highestScore"); // Clear the highest score from localStorage
+        alert("Highest score has been reset!");
+        location.reload(); // Reload the page
+      });
+
+      document.getElementById("resumeGame").addEventListener("click", () => {
+        if (gameInterval) {
+          clearInterval(gameInterval);
+          gameInterval = null;
+        } else {
+          startGame();
+        }
+      });
+
+      document.addEventListener("keydown", (e) => {
+        switch (e.key) {
+          case "ArrowUp":
+            if (direction.y === 0) direction = { x: 0, y: -1 };
+            break;
+          case "ArrowDown":
+            if (direction.y === 0) direction = { x: 0, y: 1 };
+            break;
+          case "ArrowLeft":
+            if (direction.x === 0) direction = { x: -1, y: 0 };
+            break;
+          case "ArrowRight":
+            if (direction.x === 0) direction = { x: 1, y: 0 };
+            break;
+        }
+      });
+
+      showPage(0);
+      renderGame();
+    </script>
+  <script>
+   const socket = io("http://localhost:5050");
+
+  // Jab tum "Voice Mode" choose karo (id = "voice" button hai)
+  document.getElementById("voice").addEventListener("click", () => {
+    socket.emit("start_listening");
+  });
+
+  // Jab backend se voice command aayegi
+  socket.on("voice_command", (data) => {
+    const cmd = data.command;
+    console.log("🗣️ Voice Command:", cmd);
+
+    // Snake control based on voice
+    if (cmd.includes("up")) document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp" }));
+    else if (cmd.includes("down")) document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown" }));
+    else if (cmd.includes("left")) document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
+    else if (cmd.includes("right")) document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
+  });
+
+  socket.onmessage = function (event) {
+    const key = event.data;
+    document.dispatchEvent(new KeyboardEvent("keydown", { key }));
+  };
+</script>
+  </body>
+</html>
