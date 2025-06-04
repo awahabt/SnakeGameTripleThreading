@@ -265,6 +265,15 @@
       <button id="resumeGame">Pause - Resume</button></div>
       <div class="game-container" id="gameContainer"></div>
       <div class="status-indicator" id="voiceStatus">Voice Control: Inactive</div>
+      <div class="status-indicator" id="eyeStatus">Eye Control: Inactive</div>
+      <div class="calibration-overlay" id="calibrationOverlay">
+        <div class="calibration-point center"></div>
+        <div class="calibration-point left"></div>
+        <div class="calibration-point right"></div>
+        <div class="calibration-point up"></div>
+        <div class="calibration-point down"></div>
+        <div class="calibration-status" id="calibrationStatus">Starting calibration...</div>
+      </div>
     </section>
 
     <script>
@@ -303,13 +312,10 @@
 
       document
         .getElementById("eyes")
-        .addEventListener("click", () =>
-          alert("Eye control mode coming soon!")
-        );
-
-      // Voice control activation
-      let voiceControlActive = false;
-      const voiceStatus = document.getElementById("voiceStatus");
+        .addEventListener("click", () => {
+          showPage(3);
+          startEyeControl();
+        });
 
       document
         .getElementById("voice")
@@ -318,6 +324,10 @@
           startGame();
           toggleVoiceControl();
         });
+
+      // Voice control activation
+      let voiceControlActive = false;
+      const voiceStatus = document.getElementById("voiceStatus");
 
       function toggleVoiceControl() {
         if (voiceControlActive) {
@@ -492,6 +502,65 @@
           voiceStatus.classList.remove("active");
         }
       });
+
+      // Eye control functions
+      function startEyeControl() {
+        const eyeStatus = document.getElementById("eyeStatus");
+        const calibrationOverlay = document.getElementById("calibrationOverlay");
+        const calibrationStatus = document.getElementById("calibrationStatus");
+
+        // Show calibration overlay
+        calibrationOverlay.classList.add("active");
+        eyeStatus.textContent = "Eye Control: Calibrating...";
+        eyeStatus.classList.add("active");
+
+        // Start calibration
+        socket.emit("start_eye_calibration");
+
+        // Handle calibration events
+        socket.on("eye_calibration", (data) => {
+          calibrationStatus.textContent = data.message;
+          if (data.status === "complete") {
+            const point = document.querySelector(`.calibration-point.${data.position}`);
+            if (point) {
+              point.style.borderColor = "#00ff00";
+              point.style.backgroundColor = "rgba(0, 255, 0, 0.2)";
+            }
+          }
+        });
+
+        // Handle eye tracking status
+        socket.on("eye_status", (data) => {
+          if (data.message.includes("complete")) {
+            calibrationOverlay.classList.remove("active");
+            eyeStatus.textContent = "Eye Control: Active";
+            startGame();
+          } else if (data.message.includes("failed")) {
+            calibrationOverlay.classList.remove("active");
+            eyeStatus.textContent = "Eye Control: Failed";
+            alert("Eye calibration failed. Please try again.");
+          }
+        });
+
+        // Handle eye commands
+        socket.on("eye_command", (data) => {
+          const direction = data.direction;
+          switch (direction) {
+            case "up":
+              if (direction.y === 0) direction = { x: 0, y: -1 };
+              break;
+            case "down":
+              if (direction.y === 0) direction = { x: 0, y: 1 };
+              break;
+            case "left":
+              if (direction.x === 0) direction = { x: -1, y: 0 };
+              break;
+            case "right":
+              if (direction.x === 0) direction = { x: 1, y: 0 };
+              break;
+          }
+        });
+      }
 
       showPage(0);
       renderGame();

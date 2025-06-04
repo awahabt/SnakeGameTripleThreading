@@ -3,11 +3,12 @@ from flask_socketio import SocketIO, emit
 import speech_recognition as sr
 import threading
 import time
+import eye_control  # Import our eye tracking module
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Global variable to track if voice recognition is active
+# Global variables for voice recognition
 voice_recognition_active = False
 recognition_thread = None
 
@@ -48,6 +49,7 @@ def recognize_speech():
             time.sleep(1)  # Prevent rapid error loops
 
 
+# Voice control handlers
 @socketio.on('start_listening')
 def handle_start_listening():
     """Start voice recognition in a separate thread"""
@@ -75,6 +77,48 @@ def handle_stop_listening():
     print("Voice recognition stopped")
 
 
+# Eye control handlers
+@socketio.on('start_eye_calibration')
+def handle_eye_calibration():
+    """Start the eye calibration process"""
+    print("Starting eye calibration...")
+
+    # Run calibration
+    success = eye_control.calibrate(socketio)
+
+    if success:
+        emit('eye_status', {'message': 'Calibration successful'})
+    else:
+        emit('eye_status', {'message': 'Calibration failed'})
+
+
+@socketio.on('start_eye_tracking')
+def handle_start_eye_tracking():
+    """Start eye tracking for game control"""
+    print("Starting eye tracking...")
+
+    if eye_control.calibration_complete:
+        success = eye_control.start_eye_tracking(socketio)
+        if success:
+            emit('eye_status', {'message': 'Eye tracking started'})
+        else:
+            emit('eye_status', {'message': 'Eye tracking already running'})
+    else:
+        emit('eye_status', {'message': 'Please calibrate first'})
+
+
+@socketio.on('stop_eye_tracking')
+def handle_stop_eye_tracking():
+    """Stop eye tracking"""
+    print("Stopping eye tracking...")
+
+    success = eye_control.stop_eye_tracking()
+    if success:
+        emit('eye_status', {'message': 'Eye tracking stopped'})
+    else:
+        emit('eye_status', {'message': 'Eye tracking not running'})
+
+
 @socketio.on('connect')
 def handle_connect():
     """Handle client connection"""
@@ -89,6 +133,7 @@ def handle_disconnect():
 
     # Turn off voice recognition when client disconnects
     voice_recognition_active = False
+    eye_control.stop_eye_tracking()  # Also stop eye tracking
     print("Client disconnected")
 
 
